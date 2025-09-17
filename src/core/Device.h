@@ -7,6 +7,6 @@ enum class DeviceType {
     CUDA = 1,
 };
 
-} // namespace nnk
+}
 
 
