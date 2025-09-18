@@ -11,6 +11,106 @@ namespace nnk {
 
 Tensor::Tensor() = default;
 
+Tensor::~Tensor() {
+#if TT_WITH_CUDA
+    if (device_type_ == DeviceType::CUDA && device_storage_ != nullptr) {
+        cudaFree(device_storage_);
+        device_storage_ = nullptr;
+    }
+#endif
+}
+
+Tensor::Tensor(const Tensor& other) {
+    shape_ = other.shape_;
+    num_elements_ = other.num_elements_;
+    device_type_ = other.device_type_;
+    if (device_type_ == DeviceType::CPU) {
+        host_storage_ = other.host_storage_;
+    }
+#if TT_WITH_CUDA
+    if (device_type_ == DeviceType::CUDA) {
+        if (num_elements_ == 0) {
+            device_storage_ = nullptr;
+        } else {
+            cudaError_t st = cudaMalloc(reinterpret_cast<void**>(&device_storage_), num_elements_ * sizeof(float));
+            if (st != cudaSuccess) {
+                throw std::runtime_error("cudaMalloc failed in Tensor copy ctor");
+            }
+            st = cudaMemcpy(device_storage_, other.device_storage_, num_elements_ * sizeof(float), cudaMemcpyDeviceToDevice);
+            if (st != cudaSuccess) {
+                throw std::runtime_error("cudaMemcpy D2D failed in Tensor copy ctor");
+            }
+        }
+    }
+#endif
+}
+
+Tensor::Tensor(Tensor&& other) noexcept {
+    shape_ = std::move(other.shape_);
+    num_elements_ = other.num_elements_;
+    device_type_ = other.device_type_;
+    host_storage_ = std::move(other.host_storage_);
+#if TT_WITH_CUDA
+    device_storage_ = other.device_storage_;
+    other.device_storage_ = nullptr;
+#endif
+    other.num_elements_ = 0;
+    other.device_type_ = DeviceType::CPU;
+}
+
+Tensor& Tensor::operator=(const Tensor& other) {
+    if (this == &other) return *this;
+#if TT_WITH_CUDA
+    if (device_type_ == DeviceType::CUDA && device_storage_ != nullptr) {
+        cudaFree(device_storage_);
+        device_storage_ = nullptr;
+    }
+#endif
+    shape_ = other.shape_;
+    num_elements_ = other.num_elements_;
+    device_type_ = other.device_type_;
+    host_storage_.clear();
+    host_storage_ = other.host_storage_;
+#if TT_WITH_CUDA
+    if (device_type_ == DeviceType::CUDA) {
+        if (num_elements_ == 0) {
+            device_storage_ = nullptr;
+        } else {
+            cudaError_t st = cudaMalloc(reinterpret_cast<void**>(&device_storage_), num_elements_ * sizeof(float));
+            if (st != cudaSuccess) {
+                throw std::runtime_error("cudaMalloc failed in Tensor copy assign");
+            }
+            st = cudaMemcpy(device_storage_, other.device_storage_, num_elements_ * sizeof(float), cudaMemcpyDeviceToDevice);
+            if (st != cudaSuccess) {
+                throw std::runtime_error("cudaMemcpy D2D failed in Tensor copy assign");
+            }
+        }
+    }
+#endif
+    return *this;
+}
+
+Tensor& Tensor::operator=(Tensor&& other) noexcept {
+    if (this == &other) return *this;
+#if TT_WITH_CUDA
+    if (device_type_ == DeviceType::CUDA && device_storage_ != nullptr) {
+        cudaFree(device_storage_);
+        device_storage_ = nullptr;
+    }
+#endif
+    shape_ = std::move(other.shape_);
+    num_elements_ = other.num_elements_;
+    device_type_ = other.device_type_;
+    host_storage_ = std::move(other.host_storage_);
+#if TT_WITH_CUDA
+    device_storage_ = other.device_storage_;
+    other.device_storage_ = nullptr;
+#endif
+    other.num_elements_ = 0;
+    other.device_type_ = DeviceType::CPU;
+    return *this;
+}
+
 size_t Tensor::compute_numel(const std::vector<int64_t>& dims) {
     if (dims.empty()) {
         return 0;

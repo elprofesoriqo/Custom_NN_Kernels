@@ -14,6 +14,12 @@ namespace nnk {
 class Tensor {
 public:
     Tensor();
+     ~Tensor();
+
+     Tensor(const Tensor& other);
+     Tensor(Tensor&& other) noexcept;
+     Tensor& operator=(const Tensor& other);
+     Tensor& operator=(Tensor&& other) noexcept;
 
     static Tensor zeros(const std::vector<int64_t>& shape, DeviceType device = DeviceType::CPU);
     static Tensor from_vector(const std::vector<int64_t>& shape, const std::vector<float>& data, DeviceType device = DeviceType::CPU);
@@ -44,6 +50,11 @@ private:
 #if TT_WITH_CUDA
     // Device storage (CUDA)
     float* device_storage_ = nullptr;
+#endif
+
+#if TT_WITH_CUDA
+     void free_device();
+     void allocate_and_copy_device_from(const float* src_device_ptr, size_t count);
 #endif
 };
 
