@@ -16,8 +16,14 @@ else()
   target_compile_definitions(nncore PUBLIC TT_WITH_CUDA=0)
 endif()
 
-add_subdirectory(kernels)
-add_subdirectory(layers)
-add_subdirectory(profiler)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/kernels/CMakeLists.txt)
+  add_subdirectory(kernels)
+endif()
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/layers/CMakeLists.txt)
+  add_subdirectory(layers)
+endif()
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/profiler/CMakeLists.txt)
+  add_subdirectory(profiler)
+endif()
 
 
