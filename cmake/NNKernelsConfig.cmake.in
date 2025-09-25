@@ -1,0 +1,34 @@
+@PACKAGE_INIT@
+
+# NNKernels CMake configuration file
+
+include(CMakeFindDependencyMacro)
+
+# Check if CUDA support was enabled
+set(NNKernels_CUDA_ENABLED @NNK_WITH_CUDA@)
+
+# Find dependencies
+if(NNKernels_CUDA_ENABLED)
+    find_dependency(CUDA)
+endif()
+
+# Include targets file
+include("${CMAKE_CURRENT_LIST_DIR}/NNKernelsTargets.cmake")
+
+# Check required components
+check_required_components(NNKernels)
+
+# Provide information about the library
+set(NNKernels_VERSION @PROJECT_VERSION@)
+set(NNKernels_DESCRIPTION "@PROJECT_DESCRIPTION@")
+
+# Set useful variables for consumers
+set(NNKernels_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
+set(NNKernels_LIBRARIES NNKernels::nncore)
+
+# Provide feature detection
+if(NNKernels_CUDA_ENABLED)
+    set(NNKernels_FEATURES "CUDA support enabled")
+else()
+    set(NNKernels_FEATURES "CPU-only build")
+endif()
